@@ -4,7 +4,7 @@ local Window = Fluent:CreateWindow({
     Title = "Lữ Tài Vip",
     SubTitle = "by Lữ Tài",
     TabWidth = 120,
-    Size = UDim2.fromOffset(580, 460),
+    Size = UDim2.fromOffset(500, 400),
     Acrylic = false, 
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.RightControl
@@ -50,7 +50,7 @@ MainBtn.MouseButton1Click:Connect(function() Window:Minimize() end)
 -- ==========================================
 -- MỤC 1: CAMERA SETTINGS
 -- ==========================================
-local ZoomSlider = Tabs.Main:AddSlider("ZoomSlider", {
+Tabs.Main:AddSlider("ZoomSlider", {
     Title = "Khoảng cách Zoom",
     Default = 128, Min = 128, Max = 3000, Rounding = 0,
     Callback = function(Value)
@@ -80,26 +80,42 @@ Tabs.Main:AddToggle("NoFog", {
 })
 
 -- ==========================================
--- MỤC 2: AUTO FARM CHEST + AUTO RESET (12S)
+-- MỤC 2: AUTO FARM CHEST (NHẶT TOÀN SERVER)
 -- ==========================================
 Tabs.AutoChest:AddToggle("AutoChestToggle", {
-    Title = "Bật Auto Quét Rương (Reset 12s)",
+    Title = "Bật Auto Nhặt Rương Toàn Server",
     Default = false,
     Callback = function(Value)
         _G.AutoChest = Value
         
         if Value then
-            -- Vòng lặp nhặt rương
+            -- Vòng lặp nhặt rương thông minh
             task.spawn(function()
                 while _G.AutoChest do
+                    local foundChest = false
                     pcall(function()
-                        for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
-                            if not _G.AutoChest then break end
-                            if v:IsA("TouchTransmitter") and v.Parent and v.Parent.Name:find("Chest") then
+                        -- Quét tất cả rương hiện có trong Workspace
+                        for _, v in pairs(game:GetService("Workspace"):GetChildren()) do
+                            if v:IsA("Part") and v.Name:find("Chest") then
                                 local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                                if root then
-                                    root.CFrame = v.Parent.CFrame
-                                    task.wait(0.15)
+                                if root and _G.AutoChest then
+                                    foundChest = true
+                                    -- Teleport trực tiếp đến rương
+                                    root.CFrame = v.CFrame
+                                    task.wait(0.2) -- Đợi một chút để game nhận diện đã nhặt
+                                end
+                            end
+                        end
+                        
+                        -- Nếu không thấy rương ở gần, quét sâu hơn vào các folder chứa rương ẩn
+                        if not foundChest then
+                            for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
+                                if v:IsA("TouchTransmitter") and v.Parent and v.Parent.Name:find("Chest") then
+                                    local root = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                    if root and _G.AutoChest then
+                                        root.CFrame = v.Parent.CFrame
+                                        task.wait(0.2)
+                                    end
                                 end
                             end
                         end
@@ -108,14 +124,14 @@ Tabs.AutoChest:AddToggle("AutoChestToggle", {
                 end
             end)
 
-            -- Vòng lặp Auto Reset mỗi 12 giây (Chỉ chạy khi bật Farm)
+            -- Vòng lặp Auto Reset (Giúp game load lại rương ở đảo khác)
             task.spawn(function()
                 while _G.AutoChest do
-                    task.wait(12) -- Đợi 12 giây
+                    task.wait(12)
                     if _G.AutoChest then
                         local char = game.Players.LocalPlayer.Character
                         if char and char:FindFirstChild("Humanoid") then
-                            char.Humanoid.Health = 0 -- Reset nhân vật
+                            char.Humanoid.Health = 0 
                         end
                     end
                 end
@@ -125,3 +141,4 @@ Tabs.AutoChest:AddToggle("AutoChestToggle", {
 })
 
 Window:SelectTab(1)
+
